@@ -133,38 +133,55 @@ def get_bbox_from_mask(mask: np.ndarray) -> List[List[int]]:
     :param outside_value:
     :return:
     """
-    Z, X, Y = mask.shape
-    minzidx, maxzidx, minxidx, maxxidx, minyidx, maxyidx = 0, Z, 0, X, 0, Y
+    if len(mask.shape) == 3:
+        mask = mask[None]
+        has_time_dim = False
+    else:
+        has_time_dim = True
+    T, Z, X, Y = mask.shape
+    mintidx, maxtidx, minzidx, maxzidx, minxidx, maxxidx, minyidx, maxyidx = 0, T, 0, Z, 0, X, 0, Y
+    tidx = list(range(T))
+    for t in tidx:
+        if np.any(mask[t]):
+            mintidx = t
+            break
+    for t in tidx[::-1]:
+        if np.any(mask[t]):
+            maxtidx = t + 1
+            break
+
     zidx = list(range(Z))
     for z in zidx:
-        if np.any(mask[z]):
+        if np.any(mask[:,z]):
             minzidx = z
             break
     for z in zidx[::-1]:
-        if np.any(mask[z]):
+        if np.any(mask[:,z]):
             maxzidx = z + 1
             break
 
     xidx = list(range(X))
     for x in xidx:
-        if np.any(mask[:, x]):
+        if np.any(mask[:,:, x]):
             minxidx = x
             break
     for x in xidx[::-1]:
-        if np.any(mask[:, x]):
+        if np.any(mask[:,:, x]):
             maxxidx = x + 1
             break
 
     yidx = list(range(Y))
     for y in yidx:
-        if np.any(mask[:, :, y]):
+        if np.any(mask[:, :,:, y]):
             minyidx = y
             break
     for y in yidx[::-1]:
-        if np.any(mask[:, :, y]):
+        if np.any(mask[:, :,:, y]):
             maxyidx = y + 1
             break
-    return [[minzidx, maxzidx], [minxidx, maxxidx], [minyidx, maxyidx]]
+    if not has_time_dim:
+        return [[minzidx, maxzidx], [minxidx, maxxidx], [minyidx, maxyidx]]
+    return [[mintidx, maxtidx], [minzidx, maxzidx], [minxidx, maxxidx], [minyidx, maxyidx]]
 
 
 def int_bbox(bbox):
